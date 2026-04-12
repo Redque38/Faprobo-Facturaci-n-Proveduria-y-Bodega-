@@ -1,0 +1,12 @@
+name: Test Workflow
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ qa ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "¡Funciona!"

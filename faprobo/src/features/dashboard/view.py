@@ -5,6 +5,7 @@ from PySide6.QtGui import QIcon, QFont
 
 from events.dashboard_events import NavigateToSectionEvent
 from features.proveedores.view import ProveedoresView
+from features.productos.view import ProductosView
 
 class DashboardView(QMainWindow):
     def __init__(self, event_bus):
@@ -76,11 +77,13 @@ class DashboardView(QMainWindow):
         # Páginas
         self.page_overview = QLabel("📊 Overview\n\nBienvenido al Dashboard de Faprobo")
         self.page_ventas = QLabel("💰 Sección de Ventas")
-        self.page_productos = QLabel("📦 Gestión de Productos")
 
-        for page in [self.page_overview, self.page_ventas, self.page_productos]:
+        for page in [self.page_overview, self.page_ventas]:
             page.setAlignment(Qt.AlignmentFlag.AlignCenter)
             page.setStyleSheet("font-size: 24px; color: #f8f8f2;")
+
+        # Módulo real de Productos
+        self.page_productos = ProductosView(event_bus)
 
         # Módulo real de Proveedores
         self.page_proveedores = ProveedoresView(event_bus)
@@ -220,3 +223,5 @@ class DashboardView(QMainWindow):
             # Cargar datos al entrar a la sección de proveedores
             if event.section == "proveedores":
                 self.page_proveedores.cargar()
+            elif event.section == "productos":
+                self.page_productos.cargar()

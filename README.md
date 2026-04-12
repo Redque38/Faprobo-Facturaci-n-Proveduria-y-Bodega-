@@ -74,4 +74,4 @@ La aplicación está diseñada para ser escalable y mantenible:
 Diseñado con un enfoque en la experiencia de usuario moderna, utilizando paletas de colores armónicas y micro-animaciones para ofrecer una interfaz fluida y profesional.
 
 ---
-© 2026 Developed by **Enrik**
+© 2026 Developed by **Enrique Soto** y **Ignacio Murillo**

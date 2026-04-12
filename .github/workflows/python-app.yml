@@ -1,0 +1,78 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: CI - FAPROBO Desktop
+
+on:
+  push:
+    branches: [ qa ]
+  pull_request:
+    branches: [ qa, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+      fail-fast: false
+
+    # Toda la ejecución se hace dentro de la carpeta faprobo
+    defaults:
+      run:
+        working-directory: ./faprobo
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry virtual environment
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: Install project dependencies
+        run: poetry install --no-interaction
+
+      - name: Install system dependencies for PySide6 (headless)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libegl1-mesa \
+            libgl1-mesa-glx \
+            libxcb-xinerama0 \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libglib2.0-0 \
+            libdbus-1-3
+
+      - name: Set Qt Offscreen Platform
+        run: echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
+
+      - name: Show environment info
+        run: |
+          echo "Python version:"
+          poetry run python --version
+          echo "Installed packages:"
+          poetry run pip list
+
+      # ==================== TAREAS ====================
+      - name: Smoke Test
+        run: poetry run poe smoke
+
+      - name: Run CI Tasks
+        run: poetry run poe ci

@@ -45,7 +45,7 @@ jobs:
           poetry-${{ runner.os }}-
 
     - name: Install dependencies
-      run: poetry install --with dev --no-interaction --no-root
+      run: poetry install --no-interaction --no-root --all-groups
 
     - name: Debug installed packages
       run: poetry run pip list

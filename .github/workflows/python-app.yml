@@ -56,8 +56,7 @@ jobs:
 
     # Validación básica (tu task POE)
     - name: Smoke test
-      run: poetry run poe smoke
-
+      run: poetry run python -m poethepoet smoke
     # Pipeline real (usa tu task "ci")
     - name: Run CI tasks
       run: poetry run poe ci

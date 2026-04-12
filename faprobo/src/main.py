@@ -17,6 +17,7 @@ def main():
     #presenter = LoginPresenter(model, view, event_bus)
 
     view.show()
+    
 
     sys.exit(app.exec())
 

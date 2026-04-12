@@ -30,7 +30,7 @@ lint = "ruff check ."
 format = "ruff format ."
 
 # Ejecutar app
-run = "python main.py"
+run = { cmd = "python src/main.py", env = { PYTHONPATH = "src" } }
 
 # Smoke test
 smoke = "python -c \"import PySide6; print('OK')\""

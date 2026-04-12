@@ -1,20 +1,46 @@
-[project]
+[tool.poetry]
 name = "faprobo"
 version = "0.1.0"
 description = "Facturación, Proveeduría y Bodega"
-authors = [
-    {name = "Enrik"}
-]
+authors = ["Enrik"]
 readme = "README.md"
-requires-python = ">=3.10,<3.15"
-dependencies = [
-    "pyside6 (>=6.5)"
-]
+package-mode = false
 
-
+[tool.poetry.dependencies]
+python = ">=3.10,<3.15"
+pyside6 = ">=6.5"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry]
-package-mode = false
+[tool.poetry.group.dev.dependencies]
+poethepoet = ">=0.44.0,<0.45.0"
+pytest = ">=8.0.0,<9.0.0"
+ruff = ">=0.4.0,<1.0.0"
+
+[tool.poe.tasks]
+
+# Tests
+test = "pytest"
+
+# Lint
+lint = "ruff check ."
+
+# Formateo automático
+format = "ruff format ."
+
+# Ejecutar app
+run = { cmd = "python src/main.py", env = { PYTHONPATH = "src" } }
+
+# Smoke test
+smoke = "python -c \"import PySide6; print('OK')\""
+
+# Instalar deps
+install = "poetry install"
+
+# Limpieza
+clean = "rm -rf __pycache__ .pytest_cache"
+
+# Pipeline local (igual que CI)
+ci = ["lint", "test"]
+

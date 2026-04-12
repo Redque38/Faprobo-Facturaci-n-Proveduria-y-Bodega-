@@ -3,6 +3,7 @@
 name: CI - FAPROBO Desktop
 
 on:
+  workflow_dispatch:
   push:
     branches: [ qa ]
   pull_request:

@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, 
                                QStackedWidget, QPushButton, QLabel, QFrame, QSpacerItem, QSizePolicy)
-from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, Property
-from PySide6.QtGui import QIcon, QFont
+from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve
+from PySide6.QtGui import QFont
 
 from events.dashboard_events import NavigateToSectionEvent
 

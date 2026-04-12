@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, Property
 from PySide6.QtGui import QIcon, QFont
 
 from events.dashboard_events import NavigateToSectionEvent
+from features.proveedores.view import ProveedoresView
 
 class DashboardView(QMainWindow):
     def __init__(self, event_bus):
@@ -72,15 +73,17 @@ class DashboardView(QMainWindow):
 
         self.stacked_widget = QStackedWidget()
 
-        # Páginas placeholder
+        # Páginas
         self.page_overview = QLabel("📊 Overview\n\nBienvenido al Dashboard de Faprobo")
         self.page_ventas = QLabel("💰 Sección de Ventas")
         self.page_productos = QLabel("📦 Gestión de Productos")
-        self.page_proveedores = QLabel("👥 Proveedores")
 
-        for page in [self.page_overview, self.page_ventas, self.page_productos, self.page_proveedores]:
+        for page in [self.page_overview, self.page_ventas, self.page_productos]:
             page.setAlignment(Qt.AlignmentFlag.AlignCenter)
             page.setStyleSheet("font-size: 24px; color: #f8f8f2;")
+
+        # Módulo real de Proveedores
+        self.page_proveedores = ProveedoresView(event_bus)
 
         self.stacked_widget.addWidget(self.page_overview)
         self.stacked_widget.addWidget(self.page_ventas)
@@ -210,6 +213,10 @@ class DashboardView(QMainWindow):
             index = sections[event.section]
             self.stacked_widget.setCurrentIndex(index)
             self._set_active_button([
-                self.btn_overview, self.btn_ventas, 
+                self.btn_overview, self.btn_ventas,
                 self.btn_productos, self.btn_proveedores
             ][index])
+
+            # Cargar datos al entrar a la sección de proveedores
+            if event.section == "proveedores":
+                self.page_proveedores.cargar()

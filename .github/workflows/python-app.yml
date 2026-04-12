@@ -1,0 +1,56 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: CI - FAPROBO
+
+on:
+  push:
+    branches: [qa]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.14']
+
+    continue-on-error: ${{ matrix.python-version == '3.14' }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Poetry
+      run: pip install poetry
+
+    - name: Configure Poetry
+      run: poetry config virtualenvs.create false
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pypoetry
+        key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          poetry-${{ runner.os }}-
+
+    - name: Install dependencies
+      run: poetry install --no-interaction --no-root
+
+    # Fix para PySide6 en entorno sin UI
+    - name: Set Qt offscreen
+      run: echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
+
+    # Validación básica (tu task POE)
+    - name: Smoke test
+      run: poetry run poe smoke
+
+    # Pipeline real (usa tu task "ci")
+    - name: Run CI tasks
+      run: poetry run poe ci

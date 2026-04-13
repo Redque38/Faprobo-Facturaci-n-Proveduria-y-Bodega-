@@ -2,10 +2,10 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QLineEdit,
     QFormLayout, QDialog, QDialogButtonBox, QMessageBox,
-    QFrame, QSizePolicy,
+    QFrame
 )
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
-from PySide6.QtGui import QFont, QColor
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 
 from events.proveedor_events import (
     CargarProveedoresRequestedEvent,

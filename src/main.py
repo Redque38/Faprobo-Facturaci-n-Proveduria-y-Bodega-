@@ -14,7 +14,7 @@ def main():
     # Crear las tres partes del MVP
     model = LoginModel(event_bus)
     view = LoginView(event_bus)
-    presenter = LoginPresenter(model, view, event_bus)
+    presenter = LoginPresenter(model, view, event_bus) # noqa: F841
 
     view.show()
     

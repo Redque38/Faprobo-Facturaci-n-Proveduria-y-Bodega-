@@ -3,8 +3,10 @@ name: CI - FAPROBO Desktop
 on:
   workflow_dispatch:
   push:
-    branches: [QA]
-  pull_request:
+    branches:
+      - QA
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:

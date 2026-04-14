@@ -1,0 +1,76 @@
+name: CI - FAPROBO Desktop
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [QA]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13', '3.14']
+      fail-fast: false
+
+    continue-on-error: ${{ matrix.python-version == '3.14' }}
+
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Cache virtualenv
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-${{ matrix.python-version }}-
+
+    - name: Install dependencies
+      run: poetry install --no-interaction
+
+    - name: Install system dependencies (PySide6)
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y \
+          libegl1 \
+          libgl1 \
+          libxcb-xinerama0 \
+          libxkbcommon-x11-0 \
+          libxcb-cursor0 \
+          libglib2.0-0 \
+          libdbus-1-3 \
+          libxcb-icccm4 \
+          libxcb-image0 \
+          libxcb-keysyms1 \
+          libxcb-randr0 \
+          libxcb-render-util0 \
+          libxcb-shape0
+
+    - name: Set Qt offscreen
+      run: echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
+
+    - name: Debug environment
+      run: |
+        poetry run python --version
+        poetry run pip list
+
+    - name: Smoke test
+      run: poetry run python -m poethepoet smoke
+
+    - name: Run CI tasks
+      run: poetry run python -m poethepoet ci

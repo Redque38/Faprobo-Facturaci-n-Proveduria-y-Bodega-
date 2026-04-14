@@ -1,0 +1,77 @@
+name: Build & Package Windows Installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - UAT
+  pull_request:
+    types:
+      - closed
+    branches:
+      - UAT
+
+jobs:
+  build:
+    # En PRs, solo corre si el merge fue exitoso
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar Poetry
+        run: pip install poetry
+
+      - name: Configurar Poetry (sin virtualenv, usa el Python del sistema)
+        run: poetry config virtualenvs.create false
+
+      - name: Instalar dependencias del proyecto
+        run: poetry install --without dev
+
+      - name: Instalar PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build ejecutable con PyInstaller
+        run: pyinstaller faprobo.spec
+
+      - name: Verificar que el .exe fue generado
+        run: |
+          if (!(Test-Path "dist\FaproboApp.exe")) {
+            Write-Error "ERROR: No se encontró el ejecutable en dist\"
+            exit 1
+          }
+          Write-Host "Ejecutable generado correctamente: dist\FaproboApp.exe"
+        shell: pwsh
+
+      - name: Instalar Inno Setup
+        run: |
+          choco install innosetup --yes
+        shell: pwsh
+
+      - name: Compilar instalador con Inno Setup
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+        shell: pwsh
+
+      - name: Verificar que el instalador fue generado
+        run: |
+          if (!(Test-Path "output_installer\FaproboInstaller.exe")) {
+            Write-Error "ERROR: No se encontró el instalador"
+            exit 1
+          }
+          Write-Host "Instalador generado correctamente"
+        shell: pwsh
+
+      - name: Subir instalador como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FaproboInstaller-Windows
+          path: output_installer\FaproboInstaller.exe
+          retention-days: 5

@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - Produccion
+      - UAT
   pull_request:
     types:
       - closed
     branches:
-      - Produccion
+      - UAT
 
 jobs:
   build:

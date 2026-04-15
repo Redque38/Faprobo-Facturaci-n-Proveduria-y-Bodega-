@@ -28,3 +28,6 @@ Thumbs.db
 # Pytest / Testing
 .pytest_cache/
 .coverage
+
+# Database Engines
+.db

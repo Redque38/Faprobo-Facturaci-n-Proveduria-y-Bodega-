@@ -32,6 +32,11 @@ class LoginPresenter(BasePresenter):
         from features.productos.presenter import ProductoPresenter
         ProductoPresenter(ProductoModel(self.event_bus), dashboard_view.page_productos, self.event_bus)
 
+        # Iniciar Módulo Facturación
+        from features.facturacion.model import FacturacionModel
+        from features.facturacion.presenter import FacturacionPresenter
+        FacturacionPresenter(FacturacionModel(self.event_bus), dashboard_view.page_facturacion, self.event_bus)
+
         # Nota: Referenciamos el window principal a nivel clase para evitar recolección de basura
         self.dashboard_view = dashboard_view
         self.dashboard_view.show()

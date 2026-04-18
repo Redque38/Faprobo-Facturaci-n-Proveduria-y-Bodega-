@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, 
+from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
                                QStackedWidget, QPushButton, QLabel, QFrame, QSpacerItem, QSizePolicy)
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve
 from PySide6.QtGui import QFont
@@ -6,6 +6,7 @@ from PySide6.QtGui import QFont
 from events.dashboard_events import NavigateToSectionEvent
 from features.proveedores.view import ProveedoresView
 from features.productos.view import ProductosView
+from features.facturacion.view import FacturacionView
 
 class DashboardView(QMainWindow):
     def __init__(self, event_bus):
@@ -76,11 +77,11 @@ class DashboardView(QMainWindow):
 
         # Páginas
         self.page_overview = QLabel("📊 Overview\n\nBienvenido al Dashboard de Faprobo")
-        self.page_ventas = QLabel("💰 Sección de Ventas")
+        self.page_overview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.page_overview.setStyleSheet("font-size: 24px; color: #f8f8f2;")
 
-        for page in [self.page_overview, self.page_ventas]:
-            page.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            page.setStyleSheet("font-size: 24px; color: #f8f8f2;")
+        # Módulo real de Facturación (reemplaza el placeholder de Ventas)
+        self.page_facturacion = FacturacionView(event_bus)
 
         # Módulo real de Productos
         self.page_productos = ProductosView(event_bus)
@@ -88,10 +89,10 @@ class DashboardView(QMainWindow):
         # Módulo real de Proveedores
         self.page_proveedores = ProveedoresView(event_bus)
 
-        self.stacked_widget.addWidget(self.page_overview)
-        self.stacked_widget.addWidget(self.page_ventas)
-        self.stacked_widget.addWidget(self.page_productos)
-        self.stacked_widget.addWidget(self.page_proveedores)
+        self.stacked_widget.addWidget(self.page_overview)      # índice 0
+        self.stacked_widget.addWidget(self.page_facturacion)   # índice 1
+        self.stacked_widget.addWidget(self.page_productos)     # índice 2
+        self.stacked_widget.addWidget(self.page_proveedores)   # índice 3
 
         content_layout.addWidget(self.stacked_widget)
 
@@ -207,10 +208,10 @@ class DashboardView(QMainWindow):
 
     def handle_navigation(self, event: NavigateToSectionEvent):
         sections = {
-            "overview": 0,
-            "ventas": 1,
-            "productos": 2,
-            "proveedores": 3
+            "overview":    0,
+            "ventas":      1,
+            "productos":   2,
+            "proveedores": 3,
         }
         if event.section in sections:
             index = sections[event.section]
@@ -220,8 +221,10 @@ class DashboardView(QMainWindow):
                 self.btn_productos, self.btn_proveedores
             ][index])
 
-            # Cargar datos al entrar a la sección de proveedores
+            # Cargar datos al entrar a cada sección
             if event.section == "proveedores":
                 self.page_proveedores.cargar()
             elif event.section == "productos":
                 self.page_productos.cargar()
+            elif event.section == "ventas":
+                self.page_facturacion.sig_cargar_facturas.emit({})

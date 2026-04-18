@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\\\Users\\\\enrik\\\\source\\\\repos\\\\Faprobo-Facturaci-n-Proveduria-y-Bodega-\\\\src\\\\core\" /B)",
+      "Bash(dir \"C:\\\\Users\\\\enrik\\\\source\\\\repos\\\\Faprobo-Facturaci-n-Proveduria-y-Bodega-\\\\src\\\\features\" /B)",
+      "Bash(poetry run python -c ' *)",
+      "Bash(poetry run *)",
+      "Bash(python -c ' *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(sqlite3 /c/Users/enrik/source/repos/\"Faprobo-Facturaci-n-Proveduria-y-Bodega-\"/data/catalogo.db \".tables\")",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

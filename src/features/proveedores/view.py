@@ -169,8 +169,9 @@ class ProveedoresView(QWidget):
         title_block.setSpacing(2)
 
         lbl_title = QLabel("👥 Proveedores")
-        lbl_title.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
-        lbl_title.setStyleSheet("color: #bd93f9;")
+        lbl_title.setStyleSheet(
+            "color: #bd93f9; font-size: 20pt; font-weight: bold; font-family: 'Segoe UI';"
+        )
 
         lbl_sub = QLabel("Gestión de proveedores y contactos")
         lbl_sub.setStyleSheet("color: #6272a4; font-size: 12px;")

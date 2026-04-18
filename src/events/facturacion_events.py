@@ -105,3 +105,14 @@ class SincronizacionCompletada:
 class SincronizacionFallida:
     error: str
     reintentos: int
+
+
+# ---------------------------------------------------------------------------
+# Cierre de caja — dispara la sincronización automática del día (Fase 3)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class CierreCajaSolicitado:
+    """Emitido por el módulo de caja al cerrar el día. Lo consume SyncService."""
+    fecha: datetime = field(default_factory=datetime.now)
+    usuario: Optional[str] = None

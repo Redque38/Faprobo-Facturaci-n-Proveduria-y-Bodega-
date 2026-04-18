@@ -7,6 +7,8 @@ from events.dashboard_events import NavigateToSectionEvent
 from features.proveedores.view import ProveedoresView
 from features.productos.view import ProductosView
 from features.facturacion.view import FacturacionView
+from features.usuarios.view import UsuariosView
+from features.punto_de_venta.view import PosView
 
 class DashboardView(QMainWindow):
     def __init__(self, event_bus):
@@ -56,15 +58,19 @@ class DashboardView(QMainWindow):
         sidebar_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
 
         # Botones de navegación
-        self.btn_overview = self._create_nav_button("Overview", "overview", "🏠")
-        self.btn_ventas = self._create_nav_button("Ventas", "ventas", "📊")
-        self.btn_productos = self._create_nav_button("Productos", "productos", "📦")
-        self.btn_proveedores = self._create_nav_button("Proveedores", "proveedores", "👥")
+        self.btn_overview    = self._create_nav_button("Overview",        "overview",    "🏠")
+        self.btn_facturacion = self._create_nav_button("Facturación",     "facturacion", "🧾")
+        self.btn_pos         = self._create_nav_button("Punto de Venta",  "pos",         "🛒")
+        self.btn_productos   = self._create_nav_button("Productos",       "productos",   "📦")
+        self.btn_proveedores = self._create_nav_button("Proveedores",     "proveedores", "👥")
+        self.btn_usuarios    = self._create_nav_button("Usuarios",        "usuarios",    "👤")
 
         sidebar_layout.addWidget(self.btn_overview)
-        sidebar_layout.addWidget(self.btn_ventas)
+        sidebar_layout.addWidget(self.btn_facturacion)
+        sidebar_layout.addWidget(self.btn_pos)
         sidebar_layout.addWidget(self.btn_productos)
         sidebar_layout.addWidget(self.btn_proveedores)
+        sidebar_layout.addWidget(self.btn_usuarios)
 
         sidebar_layout.addStretch()
 
@@ -77,9 +83,14 @@ class DashboardView(QMainWindow):
 
         # Páginas
         self.page_overview = QLabel("📊 Overview\n\nBienvenido al Dashboard de Faprobo")
-        
+        self.page_overview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.page_overview.setStyleSheet("font-size: 24px; color: #f8f8f2;")
+
         # Módulo real de Facturación
         self.page_facturacion = FacturacionView(event_bus)
+
+        # Módulo real de Punto de Venta
+        self.page_pos = PosView(event_bus)
 
         # Módulo real de Productos
         self.page_productos = ProductosView(event_bus)
@@ -87,10 +98,15 @@ class DashboardView(QMainWindow):
         # Módulo real de Proveedores
         self.page_proveedores = ProveedoresView(event_bus)
 
-        self.stacked_widget.addWidget(self.page_overview)
-        self.stacked_widget.addWidget(self.page_facturacion)
-        self.stacked_widget.addWidget(self.page_productos)
-        self.stacked_widget.addWidget(self.page_proveedores)
+        # Módulo real de Usuarios
+        self.page_usuarios = UsuariosView(event_bus)
+
+        self.stacked_widget.addWidget(self.page_overview)    # índice 0
+        self.stacked_widget.addWidget(self.page_facturacion) # índice 1
+        self.stacked_widget.addWidget(self.page_pos)         # índice 2
+        self.stacked_widget.addWidget(self.page_productos)   # índice 3
+        self.stacked_widget.addWidget(self.page_proveedores) # índice 4
+        self.stacked_widget.addWidget(self.page_usuarios)    # índice 5
 
         content_layout.addWidget(self.stacked_widget)
 
@@ -176,7 +192,8 @@ class DashboardView(QMainWindow):
         return btn
 
     def _set_active_button(self, active_btn: QPushButton):
-        for btn in [self.btn_overview, self.btn_ventas, self.btn_productos, self.btn_proveedores]:
+        for btn in [self.btn_overview, self.btn_facturacion, self.btn_pos,
+                    self.btn_productos, self.btn_proveedores, self.btn_usuarios]:
             btn.setProperty("active", btn == active_btn)
             btn.setChecked(btn == active_btn)
             btn.style().unpolish(btn)
@@ -206,23 +223,28 @@ class DashboardView(QMainWindow):
 
     def handle_navigation(self, event: NavigateToSectionEvent):
         sections = {
-            "overview": 0,
-            "ventas": 1,
-            "productos": 2,
-            "proveedores": 3
+            "overview":     0,
+            "facturacion":  1,
+            "pos":          2,
+            "productos":    3,
+            "proveedores":  4,
+            "usuarios":     5,
         }
+        nav_buttons = [
+            self.btn_overview, self.btn_facturacion, self.btn_pos,
+            self.btn_productos, self.btn_proveedores, self.btn_usuarios,
+        ]
         if event.section in sections:
             index = sections[event.section]
             self.stacked_widget.setCurrentIndex(index)
-            self._set_active_button([
-                self.btn_overview, self.btn_ventas,
-                self.btn_productos, self.btn_proveedores
-            ][index])
+            self._set_active_button(nav_buttons[index])
 
-            # Cargar datos al entrar a la sección
-            if event.section == "proveedores":
-                self.page_proveedores.cargar()
+            # Cargar datos al entrar a cada sección
+            if event.section == "facturacion":
+                self.page_facturacion.pedir_carga_inicial()
             elif event.section == "productos":
                 self.page_productos.cargar()
-            elif event.section == "ventas":
-                self.page_facturacion.sig_cargar_facturas.emit({})
+            elif event.section == "proveedores":
+                self.page_proveedores.cargar()
+            elif event.section == "usuarios":
+                self.page_usuarios.cargar()

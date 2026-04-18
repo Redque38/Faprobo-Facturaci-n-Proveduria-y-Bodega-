@@ -18,6 +18,9 @@ class FacturacionPresenter(BasePresenter):
     def _connect_events(self) -> None:
         self._conectar_view()
         self._suscribir_eventos()
+        # Pedimos la carga inicial *después* de conectar, para no perder
+        # el evento si la View se construyó antes que el presenter.
+        self.view.pedir_carga_inicial()
 
     # ------------------------------------------------------------------
     # Conexión View → Presenter (señales de UI)
@@ -99,11 +102,51 @@ class FacturacionPresenter(BasePresenter):
         self.model.sincronizar_con_duckdb(desde, hasta)
 
     def _on_cargar_facturas(self, filtros: dict) -> None:
-        facturas = self.model.listar_facturas(
-            tipo=filtros.get("tipo"),
-            estado=filtros.get("estado"),
-        )
-        self.view.cargar_tabla(facturas)
+        """
+        Carga facturas según el origen seleccionado:
+          - 'sqlite'    → facturas diarias (hoy)  desde la BD local.
+          - 'historial' → caché de DuckDB  desde `facturas_historia_temp`.
+            Si se pide `refrescar=True`, el Model descarga de nuevo desde el
+            origen remoto (inyectado por el SyncService en Fase 3).
+        """
+        origen = (filtros or {}).get("origen", "sqlite")
+        tipo   = (filtros or {}).get("tipo")
+        estado = (filtros or {}).get("estado")
+
+        try:
+            if origen == "historial":
+                desde = filtros.get("desde")
+                hasta = filtros.get("hasta")
+                if desde is None or hasta is None:
+                    self.view.mostrar_error(
+                        "Selecciona un rango de fechas para consultar el historial."
+                    )
+                    return
+
+                self.view.mostrar_progreso("Cargando historial...")
+                try:
+                    facturas = self.model.cargar_historial(
+                        desde=desde,
+                        hasta=hasta,
+                        refrescar=bool(filtros.get("refrescar")),
+                    )
+                finally:
+                    self.view.ocultar_progreso()
+
+                # `cargar_historial` no filtra por tipo/estado: se hace acá.
+                if tipo:
+                    facturas = [f for f in facturas if f.get("tipo") == tipo]
+                if estado:
+                    facturas = [f for f in facturas if f.get("estado") == estado]
+            else:
+                # sqlite → todas las facturas locales
+                facturas = self.model.listar_facturas(tipo=tipo, estado=estado)
+
+            self.view._facturas_cache = facturas
+            self.view.cargar_tabla(facturas)
+        except Exception as exc:
+            self.view.ocultar_progreso()
+            self.view.mostrar_error(f"Error al cargar facturas: {exc}")
 
     # ------------------------------------------------------------------
     # Handlers de EventBus → View
@@ -113,11 +156,12 @@ class FacturacionPresenter(BasePresenter):
         self.view.mostrar_info(
             f"Factura #{evento.factura_id} creada — Total: ₡{evento.total:,.2f}"
         )
-        self._on_cargar_facturas({})
+        # Respeta los selectores actuales (origen/período/filtros) de la View.
+        self.view.pedir_carga_inicial()
 
     def _on_factura_anulada(self, evento: FacturaAnulada) -> None:
         self.view.mostrar_advertencia(f"Factura #{evento.factura_id} anulada: {evento.motivo}")
-        self._on_cargar_facturas({})
+        self.view.pedir_carga_inicial()
 
     def _on_factura_pagada(self, evento: FacturaPagada) -> None:
         self.view.mostrar_info(

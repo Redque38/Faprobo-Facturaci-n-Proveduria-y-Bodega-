@@ -8,6 +8,11 @@ __pycache__/
 venv/
 env/
 
+# Secretos / variables de entorno
+.env
+.env.*
+!.env.example
+
 # Distribution / packaging
 dist/
 build/
@@ -30,4 +35,9 @@ Thumbs.db
 .coverage
 
 # Database Engines
-.db
+*.db
+*.db-wal
+*.db-shm
+data/*.db
+data/*.db-wal
+data/*.db-shm

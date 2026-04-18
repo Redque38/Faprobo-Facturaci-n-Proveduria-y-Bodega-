@@ -8,7 +8,10 @@
       "Bash(python -c ' *)",
       "Bash(echo \"EXIT: $?\")",
       "Bash(sqlite3 /c/Users/enrik/source/repos/\"Faprobo-Facturaci-n-Proveduria-y-Bodega-\"/data/catalogo.db \".tables\")",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(dir \"C:\\\\Users\\\\enrik\\\\source\\\\repos\\\\Faprobo-Facturaci-n-Proveduria-y-Bodega-\\\\src\\\\events\\\\\" && dir \"C:\\\\Users\\\\enrik\\\\source\\\\repos\\\\Faprobo-Facturaci-n-Proveduria-y-Bodega-\\\\src\\\\features\\\\usuarios\\\\\")",
+      "Bash(dir \"C:\\\\Users\\\\enrik\\\\source\\\\repos\\\\Faprobo-Facturaci-n-Proveduria-y-Bodega-\\\\src\\\\features\\\\punto_de_venta\\\\\")",
+      "Bash(python3)"
     ]
   }
 }

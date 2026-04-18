@@ -20,6 +20,7 @@ from events.producto_events import (
     ProductoEliminadoEvent,
     ProductoErrorEvent,
 )
+from events.facturacion_events import StockSolicitado, StockDescontado, StockInsuficiente
 from features.productos.repository import ProductoRepository
 
 
@@ -46,6 +47,8 @@ class ProductoModel:
         self.event_bus.subscribe("cargar_productos_requested", self._handle_cargar)
         self.event_bus.subscribe("guardar_producto_requested", self._handle_guardar)
         self.event_bus.subscribe("eliminar_producto_requested", self._handle_eliminar)
+        # Bodega: descuenta stock cuando Facturación crea una venta
+        self.event_bus.subscribe(StockSolicitado, self._handle_stock_solicitado)
 
     # ------------------------------------------------------------------
     # Handlers
@@ -143,4 +146,43 @@ class ProductoModel:
             self.event_bus.emit(
                 "producto_error",
                 ProductoErrorEvent(f"Error al eliminar producto: {exc}"),
+            )
+
+    def _handle_stock_solicitado(self, event: StockSolicitado) -> None:
+        """
+        Descuenta stock cuando Facturación crea una venta.
+        Publica StockDescontado si hay suficiente stock, StockInsuficiente si no.
+        """
+        try:
+            producto = self._repo.obtener(event.producto_id)
+            if producto is None:
+                # Producto no existe — publicar insuficiente para que la factura se anule
+                self.event_bus.publish(StockInsuficiente(
+                    producto_id=event.producto_id,
+                    cantidad_solicitada=event.cantidad,
+                    cantidad_disponible=0,
+                    factura_id=event.factura_id,
+                ))
+                return
+
+            if producto.stock < event.cantidad:
+                self.event_bus.publish(StockInsuficiente(
+                    producto_id=event.producto_id,
+                    cantidad_solicitada=event.cantidad,
+                    cantidad_disponible=producto.stock,
+                    factura_id=event.factura_id,
+                ))
+                return
+
+            stock_nuevo = self._repo.actualizar_stock(event.producto_id, -event.cantidad)
+            self.event_bus.publish(StockDescontado(
+                producto_id=event.producto_id,
+                cantidad=event.cantidad,
+                factura_id=event.factura_id,
+                stock_restante=stock_nuevo if stock_nuevo is not None else 0,
+            ))
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error(
+                "Error al descontar stock producto_id=%s: %s", event.producto_id, exc
             )

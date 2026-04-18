@@ -25,6 +25,7 @@ MIGRATIONS_ROOT = Path(__file__).parent / "migrations"
 DEFAULT_DB_PATHS = {
     "facturas": "data/facturas.db",
     "catalogo": "data/catalogo.db",
+    "bitacora": "data/bitacora.db",
 }
 
 

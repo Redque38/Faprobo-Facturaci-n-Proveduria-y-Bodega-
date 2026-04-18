@@ -6,6 +6,7 @@ from __future__ import annotations
 from core.base_presenter import BasePresenter
 from core.event_bus import EventBus
 from events.facturacion_events import StockInsuficiente
+from events.pos_events import VentaCompletadaEvent
 from features.punto_de_venta.model import PosModel
 from features.punto_de_venta.view import PosView
 
@@ -45,6 +46,15 @@ class PosPresenter(BasePresenter):
             self.view.deshabilitar_cobrar(ticket_id)
             resultado = self.model.completar_venta(lineas, descuento, metodo)
             self.view.venta_completada(ticket_id, resultado)
+            # Publicar al bus para que BitacoraService (y cualquier suscriptor) lo reciba
+            self.event_bus.publish(VentaCompletadaEvent(
+                ticket_id=ticket_id,
+                factura_id=resultado["factura_id"],
+                total=resultado["total"],
+                metodo_pago=resultado["metodo_pago"],
+                lineas=resultado.get("lineas", []),
+                descuento_global=resultado.get("descuento_global", 0.0),
+            ))
         except Exception as exc:
             self.view.habilitar_cobrar(ticket_id)
             self.view.mostrar_error(f"Error al procesar venta: {exc}")

@@ -79,6 +79,14 @@ class LoginPresenter(BasePresenter):
             self.event_bus,
         )
 
+        # Iniciar Servicio de Bitácora (suscriptor pasivo — sin View ni Presenter)
+        from features.bitacora.service import BitacoraService
+        self.bitacora_service = BitacoraService(
+            event_bus=self.event_bus,
+            db_path=DEFAULT_DB_PATHS["bitacora"],
+            usuario_nom=event.username,
+        )
+
         # Nota: Referenciamos el window principal a nivel clase para evitar recolección de basura
         self.dashboard_view = dashboard_view
         self.dashboard_view.show()

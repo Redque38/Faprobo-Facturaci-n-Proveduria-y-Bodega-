@@ -1,3 +1,15 @@
+"""
+ProveedorModel
+
+Reemplaza la lista en memoria por acceso a `catalogo.db` vía ProveedorRepository.
+Mantiene la misma API de eventos (strings).
+"""
+from __future__ import annotations
+
+from typing import Optional
+
+from core.db.sqlite_manager import SqliteManager
+from core.db.migrations_runner import DEFAULT_DB_PATHS
 from events.proveedor_events import (
     Proveedor,
     CargarProveedoresRequestedEvent,
@@ -8,117 +20,113 @@ from events.proveedor_events import (
     ProveedorEliminadoEvent,
     ProveedorErrorEvent,
 )
+from features.proveedores.repository import ProveedorRepository
 
 
 class ProveedorModel:
-    """
-    Gestiona los datos de proveedores.
-    Por ahora usa una lista en memoria con datos de ejemplo.
-    Al implementar una DB, solo se modifica este archivo.
-    """
+    """Gestiona los datos de proveedores persistidos en SQLite (catalogo.db)."""
 
-    def __init__(self, event_bus):
+    def __init__(
+        self,
+        event_bus,
+        repository: Optional[ProveedorRepository] = None,
+        db_path: Optional[str] = None,
+        seed_si_vacio: bool = True,
+    ):
         self.event_bus = event_bus
-        self._proveedores: list[Proveedor] = []
-        self._next_id: int = 1
-        self._seed_data()
+        if repository is not None:
+            self._repo = repository
+        else:
+            path = db_path or DEFAULT_DB_PATHS["catalogo"]
+            self._repo = ProveedorRepository(SqliteManager.get(path))
 
-        # Suscribirse a solicitudes
+        if seed_si_vacio:
+            self._repo.seed_si_vacio()
+
         self.event_bus.subscribe("cargar_proveedores_requested", self._handle_cargar)
         self.event_bus.subscribe("guardar_proveedor_requested", self._handle_guardar)
         self.event_bus.subscribe("eliminar_proveedor_requested", self._handle_eliminar)
 
-    # ──────────────────────────────────────────────
-    # Datos de ejemplo para desarrollo
-    # ──────────────────────────────────────────────
-
-    def _seed_data(self):
-        ejemplos = [
-            ("TechComponents S.A.", "María García",    "8888-1111", "mgarcia@tech.com",    "San José, Local 4"),
-            ("Distribuidora Norte", "Carlos Rodríguez","8888-2222", "carlos@norte.com",    "Heredia, Centro"),
-            ("Importaciones CR",   "Ana López",        "8888-3333", "ana@importcr.com",    "Alajuela, Zona Industrial"),
-        ]
-        for nombre, contacto, tel, email, dir_ in ejemplos:
-            self._proveedores.append(
-                Proveedor(
-                    id=self._next_id,
-                    nombre=nombre,
-                    contacto=contacto,
-                    telefono=tel,
-                    email=email,
-                    direccion=dir_,
-                )
-            )
-            self._next_id += 1
-
-    # ──────────────────────────────────────────────
+    # ------------------------------------------------------------------
     # Handlers
-    # ──────────────────────────────────────────────
-
+    # ------------------------------------------------------------------
     def _handle_cargar(self, event: CargarProveedoresRequestedEvent):
-        self.event_bus.emit(
-            "proveedores_cargados",
-            ProveedoresCargadosEvent(proveedores=list(self._proveedores)),
-        )
+        try:
+            proveedores = self._repo.listar()
+            self.event_bus.emit(
+                "proveedores_cargados",
+                ProveedoresCargadosEvent(proveedores=proveedores),
+            )
+        except Exception as exc:
+            self.event_bus.emit(
+                "proveedor_error",
+                ProveedorErrorEvent(f"Error al cargar proveedores: {exc}"),
+            )
 
     def _handle_guardar(self, event: GuardarProveedorRequestedEvent):
-        # Validación básica
         if not event.nombre.strip():
             self.event_bus.emit(
                 "proveedor_error",
                 ProveedorErrorEvent("El nombre del proveedor es obligatorio."),
             )
             return
-
-        if event.proveedor_id is None:
-            # Nuevo proveedor
-            nuevo = Proveedor(
-                id=self._next_id,
-                nombre=event.nombre.strip(),
-                contacto=event.contacto.strip(),
-                telefono=event.telefono.strip(),
-                email=event.email.strip(),
-                direccion=event.direccion.strip(),
-            )
-            self._proveedores.append(nuevo)
-            self._next_id += 1
-            self.event_bus.emit(
-                "proveedor_guardado",
-                ProveedorGuardadoEvent(proveedor=nuevo, es_nuevo=True),
-            )
-        else:
-            # Edición
-            for i, p in enumerate(self._proveedores):
-                if p.id == event.proveedor_id:
-                    actualizado = Proveedor(
-                        id=p.id,
-                        nombre=event.nombre.strip(),
-                        contacto=event.contacto.strip(),
-                        telefono=event.telefono.strip(),
-                        email=event.email.strip(),
-                        direccion=event.direccion.strip(),
-                    )
-                    self._proveedores[i] = actualizado
+        try:
+            if event.proveedor_id is None:
+                nuevo = self._repo.crear(
+                    nombre=event.nombre.strip(),
+                    contacto=event.contacto.strip(),
+                    telefono=event.telefono.strip(),
+                    email=event.email.strip(),
+                    direccion=event.direccion.strip(),
+                )
+                self.event_bus.emit(
+                    "proveedor_guardado",
+                    ProveedorGuardadoEvent(proveedor=nuevo, es_nuevo=True),
+                )
+            else:
+                actualizado: Optional[Proveedor] = self._repo.actualizar(
+                    event.proveedor_id,
+                    nombre=event.nombre.strip(),
+                    contacto=event.contacto.strip(),
+                    telefono=event.telefono.strip(),
+                    email=event.email.strip(),
+                    direccion=event.direccion.strip(),
+                )
+                if actualizado is None:
                     self.event_bus.emit(
-                        "proveedor_guardado",
-                        ProveedorGuardadoEvent(proveedor=actualizado, es_nuevo=False),
+                        "proveedor_error",
+                        ProveedorErrorEvent(
+                            f"No se encontró el proveedor con id={event.proveedor_id}."
+                        ),
                     )
                     return
+                self.event_bus.emit(
+                    "proveedor_guardado",
+                    ProveedorGuardadoEvent(proveedor=actualizado, es_nuevo=False),
+                )
+        except Exception as exc:
             self.event_bus.emit(
                 "proveedor_error",
-                ProveedorErrorEvent(f"No se encontró el proveedor con id={event.proveedor_id}."),
+                ProveedorErrorEvent(f"Error al guardar proveedor: {exc}"),
             )
 
     def _handle_eliminar(self, event: EliminarProveedorRequestedEvent):
-        for i, p in enumerate(self._proveedores):
-            if p.id == event.proveedor_id:
-                self._proveedores.pop(i)
+        try:
+            ok = self._repo.eliminar(event.proveedor_id)
+            if not ok:
                 self.event_bus.emit(
-                    "proveedor_eliminado",
-                    ProveedorEliminadoEvent(proveedor_id=event.proveedor_id),
+                    "proveedor_error",
+                    ProveedorErrorEvent(
+                        f"No se encontró el proveedor con id={event.proveedor_id}."
+                    ),
                 )
                 return
-        self.event_bus.emit(
-            "proveedor_error",
-            ProveedorErrorEvent(f"No se encontró el proveedor con id={event.proveedor_id}."),
-        )
+            self.event_bus.emit(
+                "proveedor_eliminado",
+                ProveedorEliminadoEvent(proveedor_id=event.proveedor_id),
+            )
+        except Exception as exc:
+            self.event_bus.emit(
+                "proveedor_error",
+                ProveedorErrorEvent(f"Error al eliminar proveedor: {exc}"),
+            )

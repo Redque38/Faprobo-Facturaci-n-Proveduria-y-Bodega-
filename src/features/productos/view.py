@@ -189,8 +189,9 @@ class ProductosView(QWidget):
         title_block.setSpacing(2)
 
         lbl_title = QLabel("📦 Productos")
-        lbl_title.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
-        lbl_title.setStyleSheet("color: #8be9fd;")
+        lbl_title.setStyleSheet(
+            "color: #8be9fd; font-size: 20pt; font-weight: bold; font-family: 'Segoe UI';"
+        )
 
         lbl_sub = QLabel("Gestión de inventario y precios")
         lbl_sub.setStyleSheet("color: #6272a4; font-size: 12px;")
